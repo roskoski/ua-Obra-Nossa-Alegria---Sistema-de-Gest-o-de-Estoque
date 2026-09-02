@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão & Estoque - Sua Obra, Nossa Alegria</title>
+
+    <!-- Bibliotecas para geração do PDF via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            background: #1e3a8a;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #1e3a8a;
+            font-size: 18px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #475569;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-success {
+            background-color: #16a34a;
+            color: white;
+            width: 100%;
+        }
+
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+        .btn-pdf {
+            background-color: #dc2626;
+            color: white;
+        }
+
+        .btn-pdf:hover {
+            background-color: #b91c1c;
+        }
+
+        .btn-db-export {
+            background-color: #0d9488;
+            color: white;
+        }
+
+        .btn-db-export:hover {
+            background-color: #0f766e;
+        }
+
+        .btn-db-import {
+            background-color: #d97706;
+            color: white;
+        }
+
+        .btn-db-import:hover {
+            background-color: #b45309;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .actions-bar-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-deposito { background: #dbeafe; color: #1e40af; }
+        .badge-loja { background: #dcfce7; color: #166534; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Sua Obra, Nossa Alegria - Sistema de Gestão de Estoque</h1>
+        <p>Controle de depósito, loja, banco de dados e relatórios em PDF</p>
+    </header>
+
+    <!-- BARRA DE AÇÕES: PDF E BANCO DE DADOS -->
+    <div class="actions-bar">
+        <button class="btn btn-pdf" onclick="gerarPDF()">
+            📄 Exportar Relatório PDF
+        </button>
+
+        <div class="actions-bar-group">
+            <button class="btn btn-db-export" onclick="exportarBancoDados()">
+                💾 Baixar Banco de Dados (.json)
+            </button>
+            <button class="btn btn-db-import" onclick="document.getElementById('inputImportDb').click()">
+                📂 Importar Banco de Dados (.json)
+            </button>
+            <!-- Input oculto para selecionar o arquivo JSON -->
+            <input type="file" id="inputImportDb" accept=".json" style="display: none;" onchange="importarBancoDados(event)">
+        </div>
+    </div>
+
+    <!-- FORMULÁRIO 1: ENTRADA DE ESTOQUE (DEPÓSITO) -->
+    <div class="card">
+        <h2>1. Entrada de Material no Depósito (Estoque Central)</h2>
+        <form id="formEstoque">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="codigo">Código do Produto:</label>
+                    <input type="text" id="codigo" placeholder="Ex: CIM-001" required>
+                </div>
+                <div class="form-group">
+                    <label for="nome">Nome do Material:</label>
+                    <input type="text" id="nome" placeholder="Ex: Cimento CPII 50kg" required>
+                </div>
+                <div class="form-group">
+                    <label for="categoria">Categoria:</label>
+                    <select id="categoria" required>
+                        <option value="">Selecione...</option>
+                        <option value="Bruto">Material Bruto</option>
+                        <option value="Hidráulica">Hidráulica</option>
+                        <option value="Elétrica">Elétrica</option>
+                        <option value="Ferramentas">Ferramentas</option>
+                        <option value="Acabamento">Acabamentos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="qtdDeposito">Quantidade Chegando no Depósito:</label>
+                    <input type="number" id="qtdDeposito" min="1" placeholder="Ex: 100" required>
+                </div>
+                <div class="form-group">
+                    <label for="precoCusto">Preço de Custo Unitário (R$):</label>
+                    <input type="number" id="precoCusto" step="0.01" placeholder="Ex: 28.50" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Cadastrar no Depósito</button>
+        </form>
+    </div>
+
+    <!-- FORMULÁRIO 2: DISPONIBILIZAR PARA A LOJA -->
+    <div class="card">
+        <h2>2. Transferência / Disponibilização para o Salão da Loja</h2>
+        <form id="formLoja">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="selectProduto">Selecione o Produto:</label>
+                    <select id="selectProduto" required>
+                        <option value="">Selecione um produto...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="qtdLoja">Qtd. a Enviar para Loja:</label>
+                    <input type="number" id="qtdLoja" min="1" placeholder="Ex: 20" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="precoVenda">Preço de Venda Final (R$):</label>
+                    <input type="number" id="precoVenda" step="0.01" placeholder="Ex: 38.00" required>
+                </div>
+                <div class="form-group">
+                    <label for="localizacao">Localização/Prateleira:</label>
+                    <input type="text" id="localizacao" placeholder="Ex: Corredor A - Prateleira 2" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success">Disponibilizar na Loja</button>
+        </form>
+    </div>
+
+    <!-- VISUALIZAÇÃO GERAL DOS DADOS -->
+    <div class="card">
+        <h2>Visão Geral do Estoque & Loja</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Material</th>
+                    <th>Categoria</th>
+                    <th>Qtd. Depósito</th>
+                    <th>Qtd. Loja</th>
+                    <th>Preço Custo</th>
+                    <th>Preço Venda</th>
+                    <th>Local Loja</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaDados">
+                <!-- Linhas preenchidas via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Dados padrão para inicialização (caso não exista nada salvo)
+    const dadosIniciais = [
+        { codigo: 'CIM-001', nome: 'Cimento CPII 50kg', categoria: 'Bruto', qtdDeposito: 150, qtdLoja: 30, custo: 28.50, venda: 38.00, local: 'Área Externa A1' },
+        { codigo: 'TUB-002', nome: 'Tubo PVC 100mm 6m', categoria: 'Hidráulica', qtdDeposito: 45, qtdLoja: 10, custo: 32.00, venda: 49.90, local: 'Corredor B2' }
+    ];
+
+    // Carrega dados do localStorage ou usa o inicial
+    let estoque = JSON.parse(localStorage.getItem('suaObra_estoque')) || dadosIniciais;
+
+    // Salva no localStorage e atualiza a interface
+    function salvarEMostrar() {
+        localStorage.setItem('suaObra_estoque', JSON.stringify(estoque));
+        atualizarTabela();
+        atualizarSelectProdutos();
+    }
+
+    // Atualiza tabela e menus na inicialização
+    document.addEventListener("DOMContentLoaded", function() {
+        salvarEMostrar();
+    });
+
+    // 1. Cadastrar no Estoque
+    document.getElementById('formEstoque').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const codigo = document.getElementById('codigo').value.trim();
+        const nome = document.getElementById('nome').value.trim();
+        const categoria = document.getElementById('categoria').value;
+        const qtdDeposito = parseInt(document.getElementById('qtdDeposito').value);
+        const precoCusto = parseFloat(document.getElementById('precoCusto').value);
+
+        let itemExistente = estoque.find(item => item.codigo === codigo);
+
+        if (itemExistente) {
+            itemExistente.qtdDeposito += qtdDeposito;
+            itemExistente.custo = precoCusto;
+        } else {
+            estoque.push({
+                codigo: codigo,
+                nome: nome,
+                categoria: categoria,
+                qtdDeposito: qtdDeposito,
+                qtdLoja: 0,
+                custo: precoCusto,
+                venda: 0.00,
+                local: 'Não definido'
+            });
+        }
+
+        salvarEMostrar();
+        this.reset();
+        alert('Produto adicionado ao Depósito com sucesso!');
+    });
+
+    // 2. Transferir para a Loja
+    document.getElementById('formLoja').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const codigo = document.getElementById('selectProduto').value;
+        const qtdLoja = parseInt(document.getElementById('qtdLoja').value);
+        const precoVenda = parseFloat(document.getElementById('precoVenda').value);
+        const localizacao = document.getElementById('localizacao').value.trim();
+
+        let item = estoque.find(i => i.codigo === codigo);
+
+        if (item) {
+            if (qtdLoja > item.qtdDeposito) {
+                alert('Quantidade insuficiente no depósito!');
+                return;
+            }
+
+            item.qtdDeposito -= qtdLoja;
+            item.qtdLoja += qtdLoja;
+            item.venda = precoVenda;
+            item.local = localizacao;
+
+            salvarEMostrar();
+            this.reset();
+            alert('Produto transferido para a Loja com sucesso!');
+        }
+    });
+
+    // Atualiza os dados na tabela visual
+    function atualizarTabela() {
+        const tbody = document.getElementById('tabelaDados');
+        tbody.innerHTML = '';
+
+        estoque.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><b>${item.codigo}</b></td>
+                <td>${item.nome}</td>
+                <td>${item.categoria}</td>
+                <td><span class="badge badge-deposito">${item.qtdDeposito} un</span></td>
+                <td><span class="badge badge-loja">${item.qtdLoja} un</span></td>
+                <td>R$ ${item.custo.toFixed(2)}</td>
+                <td>R$ ${item.venda.toFixed(2)}</td>
+                <td>${item.local}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Atualiza as opções do <select> do form da loja
+    function atualizarSelectProdutos() {
+        const select = document.getElementById('selectProduto');
+        select.innerHTML = '<option value="">Selecione um produto...</option>';
+
+        estoque.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.codigo;
+            option.textContent = `${item.nome} (Disponível Depósito: ${item.qtdDeposito})`;
+            select.appendChild(option);
+        });
+    }
+
+    // ----------------------------------------------------------------
+    // FUNÇÕES DE EXPORTAR E IMPORTAR BANCO DE DADOS (JSON)
+    // ----------------------------------------------------------------
+
+    // Download do Banco de Dados (.json)
+    function exportarBancoDados() {
+        const jsonString = JSON.stringify(estoque, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `banco_de_dados_sua_obra_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Leitura e Carga do Banco de Dados (.json)
+    function importarBancoDados(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const dadosImportados = JSON.parse(e.target.result);
+
+                if (Array.isArray(dadosImportados)) {
+                    if (confirm("Deseja substituir o estoque atual pelos dados do arquivo importado?")) {
+                        estoque = dadosImportados;
+                        salvarEMostrar();
+                        alert("Banco de dados importado com sucesso!");
+                    }
+                } else {
+                    alert("O arquivo selecionado é inválido.");
+                }
+            } catch (err) {
+                alert("Erro ao ler o arquivo JSON. Certifique-se de que é um arquivo válido.");
+            }
+        };
+
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    // ----------------------------------------------------------------
+    // FUNÇÃO PARA GERAR O RELATÓRIO PDF (jsPDF + AutoTable)
+    // ----------------------------------------------------------------
+    function gerarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Título e Cabeçalho
+        doc.setFontSize(18);
+        doc.setTextColor(30, 58, 138);
+        doc.text("Sua Obra, Nossa Alegria - Relatório Geral de Estoque e Loja", 14, 20);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const dataAtual = new Date().toLocaleString('pt-BR');
+        doc.text(`Relatório gerado em: ${dataAtual}`, 14, 28);
+
+        // Estrutura de dados para a tabela do PDF
+        const tableData = estoque.map(item => [
+            item.codigo,
+            item.nome,
+            item.categoria,
+            `${item.qtdDeposito} un`,
+            `${item.qtdLoja} un`,
+            `R$ ${item.custo.toFixed(2)}`,
+            `R$ ${item.venda.toFixed(2)}`,
+            item.local
+        ]);
+
+        // Renderiza a tabela no PDF
+        doc.autoTable({
+            startY: 35,
+            head: [['Código', 'Material', 'Categoria', 'Qtd. Depósito', 'Qtd. Loja', 'P. Custo', 'P. Venda', 'Local Loja']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [30, 58, 138],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 3
+            },
+            alternateRowStyles: {
+                fillColor: [245, 247, 250]
+            }
+        });
+
+        // Download do arquivo PDF
+        doc.save(`relatorio-sua-obra-${Date.now()}.pdf`);
+    }
+</script>
+
+</body>
+</html>
